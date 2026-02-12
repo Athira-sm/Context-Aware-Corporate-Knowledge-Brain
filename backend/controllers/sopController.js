@@ -1,5 +1,6 @@
-const fs=require("fs")
-const {extractTextFromPDF }=require("../services/pdfService")
+const SopChunk = require("../models/SopChunk");
+const { extractTextFromPDF, chunkText } = require("../services/pdfService");
+const { generateEmbedding } = require("../services/embeddingService");
 
 const uploadSOP = async (req, res) => {
   try {
@@ -7,20 +8,32 @@ const uploadSOP = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const filePath = req.file.path;
+    const text = await extractTextFromPDF(req.file.buffer);
+    const chunks = chunkText(text);
 
-    const text = await extractTextFromPDF(filePath);
+    // Batch generate embeddings for efficiency
+    const embeddings = await Promise.all(chunks.map((chunk) => generateEmbedding(chunk)));
+    console.log("Embedding length:", embeddings[0].length);
 
-    fs.unlinkSync(filePath);
+    // Store with metadata
+    for (let i = 0; i < chunks.length; i++) {
+      await SopChunk.create({
+        content: chunks[i],
+        embedding: embeddings[i],
+        metadata: {
+          filename: req.file.originalname,
+          chunkIndex: i,
+        },
+      });
+    }
 
     res.json({
-      message: "PDF uploaded and text extracted successfully ✅",
-      preview: text.substring(0, 500)
+      message: "PDF processed and stored with embeddings ✅",
+      totalChunks: chunks.length,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Upload failed ❌" });
+    res.status(500).json({ message: "Error processing PDF" });
   }
 };
 

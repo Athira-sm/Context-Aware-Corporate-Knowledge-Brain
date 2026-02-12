@@ -1,18 +1,19 @@
-require("dotenv").config();
-const express=require("express");
-const cors=require("cors");
-const connectDB = require("./config/db");
-const sopRoutes=require("./routes/sopRoutes")
+// server.js (or index.js)
+const express = require("express");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");   // move connectDB here if not already
 
-const app=express();
-connectDB();
+dotenv.config();
 
-app.use(cors());
+const app = express();
 app.use(express.json());
 
-app.use("/api/sop", sopRoutes);
+// Connect DB first
+connectDB();
 
-const port=5000
-app.listen(port,()=>{
-    console.log(`server running on port ${port}`);
-})
+app.use("/api/sop", require("./routes/sopRoutes"));
+
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
