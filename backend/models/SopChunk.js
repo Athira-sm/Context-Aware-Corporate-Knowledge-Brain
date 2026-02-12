@@ -19,8 +19,7 @@ const sopChunkSchema = new mongoose.Schema({
   },
 });
 
-// Index for vector search (if using MongoDB Atlas Vector Search, create atlasSearch index separately)
-// For basic cosine similarity queries, this helps
+
 sopChunkSchema.index({ embedding: 1 });
 
 module.exports = mongoose.model("SopChunk", sopChunkSchema);

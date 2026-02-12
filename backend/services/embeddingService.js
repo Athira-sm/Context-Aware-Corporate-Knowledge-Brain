@@ -9,9 +9,6 @@ const generateEmbedding = async (text) => {
     const response = await genAI.models.embedContent({
       model: "gemini-embedding-001",
       contents: text,
-      // Optional improvements: taskType for RAG, smaller dims for storage
-      // taskType: "RETRIEVAL_DOCUMENT",
-      // outputDimensionality: 768,
     });
 
     return response.embeddings[0].values;

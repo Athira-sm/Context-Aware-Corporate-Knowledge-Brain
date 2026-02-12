@@ -11,11 +11,10 @@ const uploadSOP = async (req, res) => {
     const text = await extractTextFromPDF(req.file.buffer);
     const chunks = chunkText(text);
 
-    // Batch generate embeddings for efficiency
     const embeddings = await Promise.all(chunks.map((chunk) => generateEmbedding(chunk)));
     console.log("Embedding length:", embeddings[0].length);
 
-    // Store with metadata
+    
     for (let i = 0; i < chunks.length; i++) {
       await SopChunk.create({
         content: chunks[i],
