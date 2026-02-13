@@ -10,6 +10,7 @@ app.use(express.json());
 connectDB();
 
 app.use("/api/sop", require("./routes/sopRoutes"));
+app.use("/api/query", require("./routes/queryRoutes"));
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
