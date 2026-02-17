@@ -12,25 +12,27 @@ const querySOP = async (req, res) => {
 
     const queryVector = await generateEmbedding(question);
 
-    
+
     const chunks = await retrieveRelevantChunks(queryVector, topK || 5);
 
-    
+
     const context = chunks
       .map(chunk => `From ${chunk.metadata?.filename || "document"}:\n${chunk.content}`)
       .join("\n\n──────────────────────────────\n\n");
 
-    
+
     const prompt = [
       {
         role: "user",
         parts: [{
-          text: `You are a precise SOP (Standard Operating Procedure) assistant for a company.
-You must answer ONLY using the provided context excerpts.
-Do NOT use external knowledge.
-If the information is not clearly present in the context → answer exactly: "Information not found in SOP documents."
+          text: `You are an AI assistant that answers ONLY from provided SOP context.
 
-Always include the source filename (and section/page if available) when you refer to information.
+Rules:
+- Use ONLY the provided context.
+- Do NOT use outside knowledge.
+- If answer is not supported by context → reply exactly:
+"I don't know based on the available SOP documents."
+- Always cite filename when giving steps.
 
 Context:
 ${context}
@@ -42,10 +44,10 @@ Answer:`
       }
     ];
 
-    
+
     const answer = await generateAnswer(prompt);
 
-    
+
     res.json({
       question,
       answer,
