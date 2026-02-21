@@ -1,5 +1,6 @@
+const fs = require("fs");
 const SopChunk = require("../models/SopChunk");
-const { extractTextFromPDF, chunkText } = require("../services/pdfService");
+const { extractTextFromPDF, chunkTextWithPage } = require("../services/pdfService");
 const { generateEmbedding } = require("../services/embeddingService");
 
 const uploadSOP = async (req, res) => {
@@ -8,28 +9,34 @@ const uploadSOP = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const text = await extractTextFromPDF(req.file.buffer);
-    const chunks = chunkText(text);
+    const pdfData = await extractTextFromPDF(
+      fs.readFileSync(req.file.path)
+    );
 
-    const embeddings = await Promise.all(chunks.map((chunk) => generateEmbedding(chunk)));
-    console.log("Embedding length:", embeddings[0].length);
+    const chunks = chunkTextWithPage(pdfData);
 
-    
+    const embeddings = await Promise.all(
+      chunks.map(c => generateEmbedding(c.content))
+    );
+
     for (let i = 0; i < chunks.length; i++) {
       await SopChunk.create({
-        content: chunks[i],
+        content: chunks[i].content,
         embedding: embeddings[i],
         metadata: {
           filename: req.file.originalname,
           chunkIndex: i,
-        },
+          page: chunks[i].page
+        }
       });
     }
 
     res.json({
-      message: "PDF processed and stored with embeddings ✅",
-      totalChunks: chunks.length,
+      message: "PDF stored + embedded ✅",
+      filename: req.file.originalname,
+      totalChunks: chunks.length
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error processing PDF" });

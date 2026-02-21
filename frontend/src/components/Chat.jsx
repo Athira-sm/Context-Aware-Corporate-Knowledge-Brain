@@ -1,74 +1,134 @@
-import { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-export default function Chat() {
+const API_BASE = "http://localhost:5000/api";
+
+export default function OpsMindChat() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/chat/history`);
+      const data = await res.json();
+      setMessages(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const askQuestion = async () => {
-    if (!question) return;
+    if (!question.trim()) return;
 
-    const newMessages = [...messages, { role: "user", text: question }, { role: "bot", text: "" }];
-    setMessages(newMessages);
+    const userMsg = { role: "user", text: question };
+    setMessages(prev => [...prev, userMsg]);
     setQuestion("");
+    setLoading(true);
 
-    const response = await fetch("http://localhost:5000/api/chat", {
+    // placeholder bot message
+    setMessages(prev => [...prev, { role: "bot", text: "" }]);
+
+    const res = await fetch(`${API_BASE}/chat`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ question }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
     });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder("utf-8");
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
 
-    let botText = "";
+    let done = false;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
 
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n");
+      const chunk = decoder.decode(value || new Uint8Array());
+      const lines = chunk.split("\n\n");
 
       for (let line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.replace("data: ", "");
+        if (!line.startsWith("data:")) continue;
+        const data = line.replace("data:", "").trim();
 
-          if (data === "[DONE]") return;
-
-          botText += data;
-
-          setMessages(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1].text = botText;
-            return updated;
-          });
+        if (data === "[DONE]") {
+          setLoading(false);
+          return;
         }
+
+        // safe streaming append
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+
+          updated[updated.length - 1] = {
+            ...last,
+            text: (last.text || "") + data
+          };
+
+          return updated;
+        });
       }
     }
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "Arial" }}>
-      <h2>OpsMind SOP Chat</h2>
-
-      <div style={{ border: "1px solid #ccc", padding: 10, height: 300, overflowY: "auto" }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ margin: "8px 0" }}>
-            <b>{m.role === "user" ? "You:" : "Bot:"}</b> {m.text}
-          </div>
-        ))}
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f3f4f6" }}>
+      {/* Header */}
+      <div style={{ background: "#2563eb", color: "white", padding: 16, fontSize: 20 }}>
+        OpsMind AI — SOP Assistant
       </div>
 
-      <div style={{ display: "flex", marginTop: 10 }}>
+      {/* Chat */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            style={{
+              maxWidth: 600,
+              padding: 12,
+              marginBottom: 10,
+              borderRadius: 12,
+              background: m.role === "user" ? "#2563eb" : "white",
+              color: m.role === "user" ? "white" : "black",
+              marginLeft: m.role === "user" ? "auto" : "0"
+            }}
+          >
+            {m.text}
+          </div>
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: 16, background: "white", borderTop: "1px solid #ddd", display: "flex", gap: 8 }}>
         <input
+          style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
           value={question}
-          onChange={(e) => setQuestion(e.target.value)}
+          onChange={e => setQuestion(e.target.value)}
           placeholder="Ask SOP question..."
-          style={{ flex: 1, padding: 8 }}
         />
-        <button onClick={askQuestion} style={{ padding: 8 }}>Send</button>
+        <button
+          onClick={askQuestion}
+          disabled={loading}
+          style={{
+            background: "#2563eb",
+            color: "white",
+            padding: "10px 16px",
+            borderRadius: 8,
+            border: "none"
+          }}
+        >
+          {loading ? "Thinking..." : "Send"}
+        </button>
       </div>
     </div>
   );
