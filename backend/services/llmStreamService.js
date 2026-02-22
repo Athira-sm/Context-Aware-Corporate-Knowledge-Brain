@@ -7,7 +7,7 @@ const genAI = new GoogleGenAI({
 const streamAnswer = async (prompt, res, onToken) => {
   try {
     const stream = await genAI.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 
@@ -19,9 +19,7 @@ const streamAnswer = async (prompt, res, onToken) => {
 
       if (!text) continue;
 
-      // Gemini sends growing text → extract only new delta
       let delta = text;
-
       if (text.startsWith(accumulated)) {
         delta = text.slice(accumulated.length);
       }

@@ -16,7 +16,7 @@ const uploadSOP = async (req, res) => {
     const chunks = chunkTextWithPage(pdfData);
 
     const embeddings = await Promise.all(
-      chunks.map(c => generateEmbedding(c.content))
+      chunks.map((c) => generateEmbedding(c.content))
     );
 
     for (let i = 0; i < chunks.length; i++) {

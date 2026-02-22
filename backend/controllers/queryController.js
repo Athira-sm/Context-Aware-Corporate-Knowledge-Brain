@@ -10,31 +10,22 @@ const querySOP = async (req, res) => {
       return res.status(400).json({ message: "Question is required" });
     }
 
-    // 1️⃣ Create embedding
     const queryVector = await generateEmbedding(question);
-
-    // 2️⃣ Retrieve relevant SOP chunks
     const chunks = await retrieveRelevantChunks(queryVector, topK || 5);
 
-    // 3️⃣ Build context
     const context = chunks
-      .map(chunk => `From ${chunk.metadata?.filename || "document"}:\n${chunk.content}`)
-      .join("\n\n──────────────────────────────\n\n");
+      .map(
+        (c) => `From ${c.metadata?.filename || "document"}:\n${c.content}`
+      )
+      .join("\n\n──────────\n\n");
 
-    // 4️⃣ LLM prompt
     const prompt = [
       {
         role: "user",
         parts: [
           {
-            text: `You are an AI assistant that answers ONLY from provided SOP context.
-
-Rules:
-- Use ONLY the provided context.
-- Do NOT use outside knowledge.
-- If answer is not supported by context → reply exactly:
-"I don't know based on the available SOP documents."
-- Always cite filename when giving steps.
+            text: `Answer ONLY from SOP context.
+If missing → "I don't know."
 
 Context:
 ${context}
@@ -47,14 +38,12 @@ Answer:`
       }
     ];
 
-    // 5️⃣ Generate answer
     const answer = await generateAnswer(prompt);
 
-    // 6️⃣ Response
     res.json({
       question,
       answer,
-      sources: chunks.map(c => ({
+      sources: chunks.map((c) => ({
         filename: c.metadata?.filename || "unknown",
         chunkIndex: c.metadata?.chunkIndex,
         score: c.score || null
