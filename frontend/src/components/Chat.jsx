@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://opsmind-ai-lr65.onrender.com/api";
 
 export default function OpsMindChat() {
   const [question, setQuestion] = useState("");
