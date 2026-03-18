@@ -13,13 +13,13 @@ const chatSOP = async (req, res) => {
 
     const q = question.toLowerCase().trim();
 
-    // ⚡ instant response for greetings (no AI call)
+   
     if (["hi", "hello", "hey"].includes(q)) {
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      res.write(`data: Hello! Ask me a question about the SOP.\n\n`);
+      res.write(`data: Hello! Ask me a question about the Documents.\n\n`);
       res.write(`data: [DONE]\n\n`);
       res.end();
       return;
@@ -36,15 +36,14 @@ const chatSOP = async (req, res) => {
       text: question
     });
 
-    // ⚡ Generate embedding
     const queryVector = await generateEmbedding(question);
     const t1 = Date.now();
 
-    // ⚡ Retrieve chunks
+    
     const chunks = await retrieveRelevantChunks(queryVector, topK || 3);
     const t2 = Date.now();
 
-    // ⚡ Build smaller context for faster LLM
+    
     const context = chunks
       .map(
         (c) =>
@@ -85,7 +84,7 @@ Answer:`
 
     let fullAnswer = "";
 
-    // ⚡ Stream answer from Gemini
+    
     await streamAnswer(prompt, res, (token) => {
       fullAnswer += token;
     });
@@ -98,13 +97,13 @@ Answer:`
       trimmedAnswer.toLowerCase().includes("i don't know") ||
       trimmedAnswer.length < 5;
 
-    // ⚡ Send sources
+    
     if (!isDontKnow) {
       res.write(`event: sources\n`);
       res.write(`data: ${JSON.stringify(sources)}\n\n`);
     }
 
-    // ⚡ Performance metrics
+   
     const metrics = {
       embeddingMs: t1 - start,
       retrievalMs: t2 - t1,
@@ -118,7 +117,7 @@ Answer:`
     res.write(`data: [DONE]\n\n`);
     res.end();
 
-    // ⚡ Save AI message
+    
     await ChatMessage.create({
       role: "bot",
       text: trimmedAnswer,

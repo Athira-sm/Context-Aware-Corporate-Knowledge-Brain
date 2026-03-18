@@ -7,6 +7,7 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -32,7 +33,6 @@ export default function Chat() {
   const handleUpload = async (file) => {
     if (!file) return;
 
-
     const formData = new FormData();
     formData.append("file", file);
 
@@ -50,20 +50,20 @@ export default function Chat() {
         throw new Error("Upload failed");
       }
 
-      alert("SOP uploaded successfully ✅");
+      const fileName = file.name;
+      setUploadedFiles((prev) => [...prev, fileName]);
+
+      alert("Document uploaded successfully ✅");
     } catch (err) {
       console.error(err);
       alert("Upload failed");
     } finally {
       setUploading(false);
     }
-
-
   };
 
   const askQuestion = async () => {
     if (!question.trim()) return;
-
 
     const userQuestion = question;
 
@@ -97,7 +97,6 @@ export default function Chat() {
       for (let evt of events) {
         if (!evt.includes("data:")) continue;
 
-        // ignore metrics event
         if (evt.startsWith("event: metrics")) {
           continue;
         }
@@ -137,8 +136,6 @@ export default function Chat() {
         });
       }
     }
-
-
   };
 
   const openSource = (src) => {
@@ -184,9 +181,8 @@ export default function Chat() {
             alignItems: "center",
           }}
         >
-          OpsMind AI – SOP Assistant
+          OpsMind AI - Document Assistant
 
-          ```
           <div>
             <input
               type="file"
@@ -209,13 +205,46 @@ export default function Chat() {
                 fontWeight: 500,
               }}
             >
-              {uploading ? "Uploading..." : "Upload SOP"}
+              {uploading ? "Uploading..." : "Upload Document"}
             </button>
           </div>
         </div>
 
         {/* CHAT AREA */}
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+
+          {/* Uploaded Files */}
+          {uploadedFiles.length > 0 && (
+            <div
+              style={{
+                marginBottom: 20,
+                background: "#f8fafc",
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                Uploaded Documents
+              </div>
+
+              {uploadedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  style={{
+                    fontSize: 13,
+                    background: "#eef2ff",
+                    padding: 6,
+                    borderRadius: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  📄 {file}
+                </div>
+              ))}
+            </div>
+          )}
+
           {messages.map((m, i) => (
             <div
               key={i}
@@ -311,7 +340,12 @@ export default function Chat() {
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask SOP question..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                askQuestion();
+              }
+            }}
+            placeholder="Ask question about your document..."
             style={{
               flex: 1,
               padding: 12,
@@ -339,7 +373,6 @@ export default function Chat() {
         </div>
       </div>
     </div>
-
-
   );
 }
+
