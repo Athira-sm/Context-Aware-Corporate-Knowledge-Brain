@@ -32,6 +32,7 @@ export default function Chat() {
   const handleUpload = async (file) => {
     if (!file) return;
 
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -43,7 +44,11 @@ export default function Chat() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("Upload error:", err);
+        throw new Error("Upload failed");
+      }
 
       alert("SOP uploaded successfully ✅");
     } catch (err) {
@@ -52,12 +57,17 @@ export default function Chat() {
     } finally {
       setUploading(false);
     }
+
+
   };
 
   const askQuestion = async () => {
     if (!question.trim()) return;
 
-    setMessages((prev) => [...prev, { role: "user", text: question }]);
+
+    const userQuestion = question;
+
+    setMessages((prev) => [...prev, { role: "user", text: userQuestion }]);
     setQuestion("");
 
     setMessages((prev) => [...prev, { role: "bot", text: "", sources: [] }]);
@@ -69,7 +79,7 @@ export default function Chat() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question: userQuestion }),
     });
 
     const reader = res.body.getReader();
@@ -86,6 +96,11 @@ export default function Chat() {
 
       for (let evt of events) {
         if (!evt.includes("data:")) continue;
+
+        // ignore metrics event
+        if (evt.startsWith("event: metrics")) {
+          continue;
+        }
 
         const dataLine = evt.split("data:")[1]?.trim();
         if (!dataLine) continue;
@@ -105,7 +120,7 @@ export default function Chat() {
               updated[updated.length - 1] = { ...last, sources: src };
               return updated;
             });
-          } catch {}
+          } catch { }
           continue;
         }
 
@@ -122,10 +137,15 @@ export default function Chat() {
         });
       }
     }
+
+
   };
 
   const openSource = (src) => {
-    window.open(`http://localhost:5000/uploads/${src.filename}`, "_blank");
+    window.open(
+      `${API_BASE.replace("/api", "")}/uploads/${src.filename}`,
+      "_blank"
+    );
   };
 
   return (
@@ -166,6 +186,7 @@ export default function Chat() {
         >
           OpsMind AI – SOP Assistant
 
+          ```
           <div>
             <input
               type="file"
@@ -270,7 +291,9 @@ export default function Chat() {
           ))}
 
           {loading && (
-            <div style={{ color: "#666", fontSize: 13 }}>AI is thinking...</div>
+            <div style={{ color: "#666", fontSize: 13 }}>
+              AI is thinking...
+            </div>
           )}
 
           <div ref={chatEndRef} />
@@ -316,5 +339,7 @@ export default function Chat() {
         </div>
       </div>
     </div>
+
+
   );
 }

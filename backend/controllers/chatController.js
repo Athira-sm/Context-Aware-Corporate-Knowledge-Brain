@@ -55,18 +55,16 @@ const chatSOP = async (req, res) => {
       .join("\n\n─────\n\n");
 
     const prompt = [
+  {
+    role: "user",
+    parts: [
       {
-        role: "user",
-        parts: [
-          {
-            text: `You are a strict SOP assistant.
+        text: `You are a document assistant.
 
 Rules:
-1. Answer ONLY using the provided context.
-2. If the answer is not in the context reply exactly:
-"I don't know."
-3. Keep answers concise.
-4. Cite filename and page if possible.
+1. Answer using ONLY the provided document context.
+2. If the answer is not present in the context, reply exactly: "I don't know."
+3. Be concise and cite filename + page when possible.
 
 Context:
 ${context}
@@ -74,10 +72,10 @@ ${context}
 Question: ${question}
 
 Answer:`
-          }
-        ]
       }
-    ];
+    ]
+  }
+];
 
     const sources = chunks.map((c) => ({
       filename: c.metadata?.filename || "unknown",
