@@ -13,6 +13,13 @@ export default function Chat() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    const saved = localStorage.getItem("uploadedFiles");
+    if (saved) {
+      setUploadedFiles(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
     fetchHistory();
   }, []);
 
@@ -51,9 +58,17 @@ export default function Chat() {
       }
 
       const fileName = file.name;
-      setUploadedFiles((prev) => [...prev, fileName]);
 
-      alert("Document uploaded successfully ✅");
+      setUploadedFiles((prev) => {
+        const updated = [...prev, fileName];
+        localStorage.setItem("uploadedFiles", JSON.stringify(updated));
+        return updated;
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: `📄 ${fileName} uploaded successfully.` },
+      ]);
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -97,10 +112,6 @@ export default function Chat() {
       for (let evt of events) {
         if (!evt.includes("data:")) continue;
 
-        if (evt.startsWith("event: metrics")) {
-          continue;
-        }
-
         const dataLine = evt.split("data:")[1]?.trim();
         if (!dataLine) continue;
 
@@ -119,7 +130,7 @@ export default function Chat() {
               updated[updated.length - 1] = { ...last, sources: src };
               return updated;
             });
-          } catch { }
+          } catch {}
           continue;
         }
 
@@ -146,28 +157,68 @@ export default function Chat() {
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        background: "#f3f4f6",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <div style={{ display: "flex", height: "100vh", background: "#f3f4f6" }}>
+      
+      {/* SIDEBAR */}
       <div
         style={{
-          width: "100%",
-          maxWidth: 900,
-          height: "95vh",
+          width: 260,
           background: "white",
+          borderRight: "1px solid #e5e7eb",
+          padding: 16,
           display: "flex",
           flexDirection: "column",
-          borderRadius: 12,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-          overflow: "hidden",
         }}
       >
+        <div style={{ fontWeight: 600, marginBottom: 10 }}>
+          Documents
+        </div>
+
+        <input
+          type="file"
+          accept="application/pdf"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={(e) => handleUpload(e.target.files[0])}
+        />
+
+        <button
+          onClick={() => fileInputRef.current.click()}
+          disabled={uploading}
+          style={{
+            background: "#2563eb",
+            color: "white",
+            border: "none",
+            padding: "10px",
+            borderRadius: 8,
+            marginBottom: 16,
+            cursor: "pointer",
+          }}
+        >
+          {uploading ? "Uploading..." : "Upload PDF"}
+        </button>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {uploadedFiles.map((file, index) => (
+            <div
+              key={index}
+              style={{
+                fontSize: 13,
+                background: "#eef2ff",
+                padding: 8,
+                borderRadius: 6,
+                marginBottom: 6,
+              }}
+            >
+              📄 {file}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CHAT AREA */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        
         {/* HEADER */}
         <div
           style={{
@@ -176,75 +227,13 @@ export default function Chat() {
             padding: 16,
             fontSize: 18,
             fontWeight: 600,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
           }}
         >
-          OpsMind AI - Document Assistant
-
-          <div>
-            <input
-              type="file"
-              accept="application/pdf"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={(e) => handleUpload(e.target.files[0])}
-            />
-
-            <button
-              onClick={() => fileInputRef.current.click()}
-              disabled={uploading}
-              style={{
-                background: "white",
-                color: "#2563eb",
-                border: "none",
-                padding: "8px 14px",
-                borderRadius: 8,
-                cursor: "pointer",
-                fontWeight: 500,
-              }}
-            >
-              {uploading ? "Uploading..." : "Upload Document"}
-            </button>
-          </div>
+          OpsMind AI – Document Assistant
         </div>
 
-        {/* CHAT AREA */}
+        {/* CHAT MESSAGES */}
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-
-          {/* Uploaded Files */}
-          {uploadedFiles.length > 0 && (
-            <div
-              style={{
-                marginBottom: 20,
-                background: "#f8fafc",
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Uploaded Documents
-              </div>
-
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  style={{
-                    fontSize: 13,
-                    background: "#eef2ff",
-                    padding: 6,
-                    borderRadius: 6,
-                    marginBottom: 4,
-                  }}
-                >
-                  📄 {file}
-                </div>
-              ))}
-            </div>
-          )}
-
           {messages.map((m, i) => (
             <div
               key={i}
@@ -328,7 +317,7 @@ export default function Chat() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* INPUT AREA */}
+        {/* INPUT */}
         <div
           style={{
             borderTop: "1px solid #eee",
@@ -341,9 +330,7 @@ export default function Chat() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                askQuestion();
-              }
+              if (e.key === "Enter") askQuestion();
             }}
             placeholder="Ask question about your document..."
             style={{
