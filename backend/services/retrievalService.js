@@ -1,6 +1,6 @@
 const SopChunk = require("../models/SopChunk");
 
-const retrieveRelevantChunks = async (queryVector, topK = 5) => {
+const retrieveRelevantChunks = async (queryVector, topK = 3) => {
   try {
     const results = await SopChunk.aggregate([
       {
@@ -8,7 +8,7 @@ const retrieveRelevantChunks = async (queryVector, topK = 5) => {
           index: "opsmind-ai",
           path: "embedding",
           queryVector: queryVector,
-          numCandidates: 100,
+          numCandidates: 30,   // reduced from 100 → faster search
           limit: topK
         }
       },

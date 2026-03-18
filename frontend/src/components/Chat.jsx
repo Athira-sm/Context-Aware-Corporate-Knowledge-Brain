@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 
 const API_BASE = "https://opsmind-ai-lr65.onrender.com/api";
 
-export default function OpsMindChat() {
+export default function Chat() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -28,31 +29,12 @@ export default function OpsMindChat() {
     }
   };
 
-  const formatSteps = (text) => {
-    if (!text) return text;
-    if (text.toLowerCase().includes("i don't know")) return "I don't know";
-
-    const stepRegex = /(Step\s*\d+:.*?)(?=Step\s*\d+:|$)/gis;
-    const matches = text.match(stepRegex);
-
-    if (!matches) return text;
-
-    return (
-      <div>
-        {matches.map((step, i) => (
-          <div key={i} style={{ marginBottom: 4 }}>
-            • {step.trim()}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   const handleUpload = async (file) => {
     if (!file) return;
 
     const formData = new FormData();
     formData.append("file", file);
+
     setUploading(true);
 
     try {
@@ -62,7 +44,8 @@ export default function OpsMindChat() {
       });
 
       if (!res.ok) throw new Error("Upload failed");
-      alert("SOP uploaded & embedded successfully ✅");
+
+      alert("SOP uploaded successfully ✅");
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -76,13 +59,16 @@ export default function OpsMindChat() {
 
     setMessages((prev) => [...prev, { role: "user", text: question }]);
     setQuestion("");
-    setLoading(true);
 
     setMessages((prev) => [...prev, { role: "bot", text: "", sources: [] }]);
 
+    setLoading(true);
+
     const res = await fetch(`${API_BASE}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ question }),
     });
 
@@ -112,6 +98,7 @@ export default function OpsMindChat() {
         if (evt.startsWith("event: sources")) {
           try {
             const src = JSON.parse(dataLine);
+
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -125,10 +112,12 @@ export default function OpsMindChat() {
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
+
           updated[updated.length - 1] = {
             ...last,
             text: (last.text || "") + dataLine,
           };
+
           return updated;
         });
       }
@@ -149,33 +138,33 @@ export default function OpsMindChat() {
         alignItems: "center",
       }}
     >
-      
       <div
         style={{
           width: "100%",
-          maxWidth: 850,
+          maxWidth: 900,
           height: "95vh",
           background: "white",
           display: "flex",
           flexDirection: "column",
           borderRadius: 12,
-          boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
           overflow: "hidden",
         }}
       >
-        
+        {/* HEADER */}
         <div
           style={{
-            background: "#2563eb",
+            background: "linear-gradient(90deg,#2563eb,#1d4ed8)",
             color: "white",
-            padding: 14,
-            fontSize: 16,
+            padding: 16,
+            fontSize: 18,
+            fontWeight: 600,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          SOP Assistant
+          OpsMind AI – SOP Assistant
 
           <div>
             <input
@@ -193,8 +182,8 @@ export default function OpsMindChat() {
                 background: "white",
                 color: "#2563eb",
                 border: "none",
-                padding: "6px 12px",
-                borderRadius: 6,
+                padding: "8px 14px",
+                borderRadius: 8,
                 cursor: "pointer",
                 fontWeight: 500,
               }}
@@ -204,77 +193,122 @@ export default function OpsMindChat() {
           </div>
         </div>
 
-       
-        <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+        {/* CHAT AREA */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
           {messages.map((m, i) => (
-            <div key={i} style={{ marginBottom: 14 }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                marginBottom: 16,
+                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+              }}
+            >
+              {m.role === "bot" && (
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "#2563eb",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 10,
+                    fontWeight: "bold",
+                  }}
+                >
+                  AI
+                </div>
+              )}
+
               <div
                 style={{
                   maxWidth: 600,
-                  padding: 12,
-                  borderRadius: 12,
-                  background: m.role === "user" ? "#2563eb" : "#f9fafb",
-                  color: m.role === "user" ? "white" : "black",
-                  marginLeft: m.role === "user" ? "auto" : "0",
+                  padding: 14,
+                  borderRadius: 14,
+                  background: m.role === "user" ? "#2563eb" : "#f1f5f9",
+                  color: m.role === "user" ? "white" : "#111",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
-                {formatSteps(m.text)}
-              </div>
+                {m.text}
 
-              {m.role === "bot" && m.sources?.length > 0 && (
-                <div style={{ marginTop: 6, fontSize: 12 }}>
-                  <div style={{ color: "#2563eb", fontWeight: 500 }}>
-                    Sources
-                  </div>
-                  {m.sources.map((s, idx) => (
+                {m.role === "bot" && m.sources?.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
                     <div
-                      key={idx}
-                      onClick={() => openSource(s)}
                       style={{
-                        cursor: "pointer",
+                        fontSize: 12,
                         color: "#2563eb",
-                        textDecoration: "underline",
+                        fontWeight: 600,
                       }}
                     >
-                      {s.filename} (p.{s.page})
+                      Sources
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    {m.sources.map((s, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => openSource(s)}
+                        style={{
+                          fontSize: 12,
+                          marginTop: 4,
+                          cursor: "pointer",
+                          background: "#eef2ff",
+                          padding: 6,
+                          borderRadius: 6,
+                        }}
+                      >
+                        📄 {s.filename} (Page {s.page})
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
+
+          {loading && (
+            <div style={{ color: "#666", fontSize: 13 }}>AI is thinking...</div>
+          )}
+
           <div ref={chatEndRef} />
         </div>
 
-        
+        {/* INPUT AREA */}
         <div
           style={{
-            padding: 14,
             borderTop: "1px solid #eee",
+            padding: 14,
             display: "flex",
             gap: 8,
           }}
         >
           <input
-            style={{
-              flex: 1,
-              padding: 10,
-              borderRadius: 8,
-              border: "1px solid #ccc",
-            }}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Ask SOP question..."
+            style={{
+              flex: 1,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid #ddd",
+              fontSize: 14,
+            }}
           />
+
           <button
             onClick={askQuestion}
             disabled={loading}
             style={{
               background: "#2563eb",
               color: "white",
-              padding: "10px 16px",
-              borderRadius: 8,
+              padding: "12px 18px",
+              borderRadius: 10,
               border: "none",
+              fontWeight: 500,
+              cursor: "pointer",
             }}
           >
             {loading ? "Thinking..." : "Send"}

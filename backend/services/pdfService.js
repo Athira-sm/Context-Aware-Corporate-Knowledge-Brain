@@ -5,7 +5,7 @@ const extractTextFromPDF = async (buffer) => {
   return data;
 };
 
-const chunkTextWithPage = (pdfData, chunkSize = 1000, overlap = 200) => {
+const chunkTextWithPage = (pdfData, chunkSize = 600, overlap = 100) => {
   const text = pdfData.text;
   const totalPages = pdfData.numpages || 1;
 

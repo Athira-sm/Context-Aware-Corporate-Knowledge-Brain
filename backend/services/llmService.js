@@ -2,7 +2,7 @@ const { GoogleGenAI } = require("@google/genai");
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, });
 const generateAnswerStream = async (prompt, res) => {
   const stream = await genAI.models.generateContentStream({
-    model: "gemini-2.5-flash-lite",
+    model:  "gemini-1.5-flash",
     contents: prompt,
   });
   for await (const chunk of stream) {
