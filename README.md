@@ -1,14 +1,23 @@
-# 🧠 OpsMind AI – Enterprise SOP Assistant
+# SmartDocs AI – Context-Aware Corporate Knowledge Brain
 
-OpsMind AI is a Retrieval-Augmented Generation (RAG) based AI assistant that allows users to upload SOP (PDF) documents and ask questions strictly based on those documents.
+---
 
-The system uses semantic vector search and Gemini LLM to generate accurate, source-cited responses with hallucination control.
+## Overview
+
+**SmartDocs AI** is an AI-powered document assistant designed to help organizations manage and interact with their SOPs (Standard Operating Procedures) and PDFs.  
+Users can upload PDFs, ask questions in natural language, and receive AI-generated answers with source citations.  
+
+The system leverages:
+- PDF parsing and chunking  
+- Embedding generation for semantic search  
+- Real-time AI-powered chat  
 
 
+---
 ## 🎯 Features
 
-- 📄 Upload SOP PDF documents  
-- 🔍 Semantic search using vector embeddings  
+- 📄 Upload PDFs and automatically split them into chunks  
+- 🔍 Ask questions about the content of uploaded documents   
 - 🤖 AI-powered answer generation  
 - 📌 Source citation (filename + page number)  
 - 🚫 Hallucination prevention ("I don’t know" fallback)  
@@ -31,7 +40,7 @@ Database
 
 AI  
 - Gemini Embeddings  
-- Gemini 2.5 Flash  
+- gemini-1.5-flash 
 
 Deployment  
 - Docker  
