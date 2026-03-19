@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const { uploadSOP } = require("../controllers/sopController");
+const { uploadSOP,deleteSOP } = require("../controllers/sopController");
 
 const router = express.Router();
 
@@ -18,9 +18,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+  limits: { fileSize: 20 * 1024 * 1024 } 
 });
 
 router.post("/upload", upload.single("file"), uploadSOP);
-
+router.delete("/delete/:filename", deleteSOP);
 module.exports = router;

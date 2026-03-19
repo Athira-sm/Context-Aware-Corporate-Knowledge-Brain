@@ -56,5 +56,24 @@ const uploadSOP = async (req, res) => {
     });
   }
 };
+const deleteSOP = async (req, res) => {
+  try {
+    const { filename } = req.params;
 
-module.exports = { uploadSOP };
+    // remove PDF from uploads folder
+    const filePath = path.join(__dirname, "../uploads", filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // remove from database chunks
+    await SopChunk.deleteMany({ "metadata.filename": filename });
+
+    res.json({ message: `${filename} deleted successfully ✅` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting PDF", error: error.message });
+  }
+};
+
+module.exports = { uploadSOP,deleteSOP };
