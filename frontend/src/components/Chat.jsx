@@ -8,15 +8,14 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [selectedPdf, setSelectedPdf] = useState(null);
 
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("uploadedFiles");
-    if (saved) {
-      setUploadedFiles(JSON.parse(saved));
-    }
+    if (saved) setUploadedFiles(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
@@ -52,8 +51,6 @@ export default function Chat() {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        console.error("Upload error:", err);
         throw new Error("Upload failed");
       }
 
@@ -69,8 +66,8 @@ export default function Chat() {
         ...prev,
         { role: "bot", text: `📄 ${fileName} uploaded successfully.` },
       ]);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       alert("Upload failed");
     } finally {
       setUploading(false);
@@ -85,7 +82,7 @@ export default function Chat() {
     setMessages((prev) => [...prev, { role: "user", text: userQuestion }]);
     setQuestion("");
 
-    setMessages((prev) => [...prev, { role: "bot", text: "", sources: [] }]);
+    setMessages((prev) => [...prev, { role: "bot", text: "" }]);
 
     setLoading(true);
 
@@ -113,25 +110,10 @@ export default function Chat() {
         if (!evt.includes("data:")) continue;
 
         const dataLine = evt.split("data:")[1]?.trim();
-        if (!dataLine) continue;
 
         if (dataLine === "[DONE]") {
           setLoading(false);
           return;
-        }
-
-        if (evt.startsWith("event: sources")) {
-          try {
-            const src = JSON.parse(dataLine);
-
-            setMessages((prev) => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              updated[updated.length - 1] = { ...last, sources: src };
-              return updated;
-            });
-          } catch {}
-          continue;
         }
 
         setMessages((prev) => {
@@ -149,215 +131,124 @@ export default function Chat() {
     }
   };
 
-  const openSource = (src) => {
-    window.open(
-      `${API_BASE.replace("/api", "")}/uploads/${src.filename}`,
-      "_blank"
-    );
-  };
-
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#f3f4f6" }}>
-      
-      {/* SIDEBAR */}
-      <div
-        style={{
-          width: 260,
-          background: "white",
-          borderRight: "1px solid #e5e7eb",
-          padding: 16,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div style={{ fontWeight: 600, marginBottom: 10 }}>
-          Documents
-        </div>
+    <div className="flex h-screen bg-gray-950 text-white">
 
+      <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4">
+        <button
+          onClick={() => window.location.reload()} 
+          className="mb-4 text-gray-200 hover:text-white font-bold text-lg transition"
+        >
+          ← Back
+        </button>
+         <h2 className="text-lg font-semibold mb-4">Documents</h2>
         <input
           type="file"
           accept="application/pdf"
           ref={fileInputRef}
-          style={{ display: "none" }}
+          className="hidden"
           onChange={(e) => handleUpload(e.target.files[0])}
         />
 
         <button
           onClick={() => fileInputRef.current.click()}
-          disabled={uploading}
-          style={{
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-            padding: "10px",
-            borderRadius: 8,
-            marginBottom: 16,
-            cursor: "pointer",
-          }}
+          className="bg-purple-600 hover:bg-purple-700 rounded-lg py-2 mb-4 transition"
         >
           {uploading ? "Uploading..." : "Upload PDF"}
         </button>
 
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="flex-1 overflow-y-auto space-y-2">
           {uploadedFiles.map((file, index) => (
             <div
               key={index}
-              style={{
-                fontSize: 13,
-                background: "#eef2ff",
-                padding: 8,
-                borderRadius: 6,
-                marginBottom: 6,
-              }}
+              onClick={() => setSelectedPdf(file)}
+              className="bg-gray-800 hover:bg-gray-700 p-2 rounded cursor-pointer text-sm"
             >
               📄 {file}
             </div>
           ))}
         </div>
+
       </div>
 
-      {/* CHAT AREA */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        
-        {/* HEADER */}
-        <div
-          style={{
-            background: "linear-gradient(90deg,#2563eb,#1d4ed8)",
-            color: "white",
-            padding: 16,
-            fontSize: 18,
-            fontWeight: 600,
-          }}
-        >
-          OpsMind AI – Document Assistant
-        </div>
+      
+      <div className="flex flex-1">
 
-        {/* CHAT MESSAGES */}
-        <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                marginBottom: 16,
-                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-              }}
-            >
-              {m.role === "bot" && (
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "50%",
-                    background: "#2563eb",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 10,
-                    fontWeight: "bold",
-                  }}
-                >
-                  AI
-                </div>
-              )}
+      
+        <div className="flex flex-col flex-1">
 
+          
+          <div className="bg-gray-900 border-b border-gray-800 p-4 font-semibold">
+            SmartDocs AI – Document Assistant
+          </div>
+
+         
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+
+            {messages.map((m, i) => (
               <div
-                style={{
-                  maxWidth: 600,
-                  padding: 14,
-                  borderRadius: 14,
-                  background: m.role === "user" ? "#2563eb" : "#f1f5f9",
-                  color: m.role === "user" ? "white" : "#111",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                }}
+                key={i}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
               >
-                {m.text}
-
-                {m.role === "bot" && m.sources?.length > 0 && (
-                  <div style={{ marginTop: 10 }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#2563eb",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Sources
-                    </div>
-
-                    {m.sources.map((s, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => openSource(s)}
-                        style={{
-                          fontSize: 12,
-                          marginTop: 4,
-                          cursor: "pointer",
-                          background: "#eef2ff",
-                          padding: 6,
-                          borderRadius: 6,
-                        }}
-                      >
-                        📄 {s.filename} (Page {s.page})
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div
+                  className={`max-w-xl px-4 py-3 rounded-xl ${m.role === "user"
+                      ? "bg-purple-600"
+                      : "bg-gray-800"
+                    }`}
+                >
+                  {m.text}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {loading && (
-            <div style={{ color: "#666", fontSize: 13 }}>
-              AI is thinking...
-            </div>
-          )}
+            {loading && (
+              <div className="text-gray-400 text-sm">
+                AI is thinking...
+              </div>
+            )}
 
-          <div ref={chatEndRef} />
+            <div ref={chatEndRef} />
+
+          </div>
+
+          <div className="border-t border-gray-800 p-4 flex gap-2">
+
+            <input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") askQuestion();
+              }}
+              placeholder="Ask question about your document..."
+              className="flex-1 bg-gray-800 rounded-lg px-4 py-2 outline-none"
+            />
+
+            <button
+              onClick={askQuestion}
+              disabled={loading}
+              className="bg-purple-600 hover:bg-purple-700 px-6 rounded-lg transition"
+            >
+              Send
+            </button>
+
+          </div>
+
         </div>
 
-        {/* INPUT */}
-        <div
-          style={{
-            borderTop: "1px solid #eee",
-            padding: 14,
-            display: "flex",
-            gap: 8,
-          }}
-        >
-          <input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") askQuestion();
-            }}
-            placeholder="Ask question about your document..."
-            style={{
-              flex: 1,
-              padding: 12,
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              fontSize: 14,
-            }}
-          />
+       
+        {selectedPdf && (
+          <div className="w-[400px] border-l border-gray-800 bg-black">
 
-          <button
-            onClick={askQuestion}
-            disabled={loading}
-            style={{
-              background: "#2563eb",
-              color: "white",
-              padding: "12px 18px",
-              borderRadius: 10,
-              border: "none",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "Thinking..." : "Send"}
-          </button>
-        </div>
+            <iframe
+              src={`${API_BASE.replace("/api", "")}/uploads/${selectedPdf}`}
+              title="PDF Viewer"
+              className="w-full h-full"
+            />
+
+          </div>
+        )}
+
       </div>
     </div>
   );
